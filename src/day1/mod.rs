@@ -1,7 +1,7 @@
 use std::fs;
 use std::cmp;
 
-pub fn part1(input_file: &str) -> i32 {
+pub fn part1(input_file: &str) -> String {
     // Append newline so last elf gets read properly
     let input = fs::read_to_string(input_file).unwrap() + "\n";
     
@@ -22,15 +22,15 @@ pub fn part1(input_file: &str) -> i32 {
         }
     }
 
-    return max_calories;
+    return max_calories.to_string();
 }
 
-pub fn part2(input_file: &str) -> i32 {
+pub fn part2(input_file: &str) -> String {
     // Append newline so last elf gets read properly
     let input = fs::read_to_string(input_file).unwrap() + "\n";
     
     let tokens: Vec<&str> = input.split("\n").collect();
-    return sum_of_top_calories(&tokens, 3);
+    return sum_of_top_calories(&tokens, 3).to_string();
 }
 
 fn sum_of_top_calories(tokens: &Vec<&str>, top: usize) -> i32 {
