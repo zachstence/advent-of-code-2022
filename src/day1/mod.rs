@@ -5,7 +5,7 @@ pub fn part1(input_file: &str) -> String {
     // Append newline so last elf gets read properly
     let input = fs::read_to_string(input_file).unwrap() + "\n";
     
-    let tokens = input.split("\n");
+    let tokens = input.split('\n');
 
     let mut max_calories = 0;
     let mut calories = 0;
@@ -22,15 +22,15 @@ pub fn part1(input_file: &str) -> String {
         }
     }
 
-    return max_calories.to_string();
+    max_calories.to_string()
 }
 
 pub fn part2(input_file: &str) -> String {
     // Append newline so last elf gets read properly
     let input = fs::read_to_string(input_file).unwrap() + "\n";
     
-    let tokens: Vec<&str> = input.split("\n").collect();
-    return sum_of_top_calories(&tokens, 3).to_string();
+    let tokens: Vec<&str> = input.split('\n').collect();
+    sum_of_top_calories(&tokens, 3).to_string()
 }
 
 fn sum_of_top_calories(tokens: &Vec<&str>, top: usize) -> i32 {
@@ -52,9 +52,10 @@ fn sum_of_top_calories(tokens: &Vec<&str>, top: usize) -> i32 {
     calories.sort_by(|a, b| b.cmp(a));
 
     let mut sum = 0;
+    #[allow(clippy::needless_range_loop)]
     for i in 0..top {
         sum += calories[i];
     }
 
-    return sum;
+    sum
 }
