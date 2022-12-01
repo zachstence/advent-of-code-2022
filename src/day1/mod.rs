@@ -2,7 +2,8 @@ use std::fs;
 use std::cmp;
 
 pub fn part1(input_file: &str) -> i32 {
-    let input = fs::read_to_string(input_file).unwrap();
+    // Append newline so last elf gets read properly
+    let input = fs::read_to_string(input_file).unwrap() + "\n";
     
     let tokens = input.split("\n");
 
@@ -22,4 +23,38 @@ pub fn part1(input_file: &str) -> i32 {
     }
 
     return max_calories;
+}
+
+pub fn part2(input_file: &str) -> i32 {
+    // Append newline so last elf gets read properly
+    let input = fs::read_to_string(input_file).unwrap() + "\n";
+    
+    let tokens: Vec<&str> = input.split("\n").collect();
+    return sum_of_top_calories(&tokens, 3);
+}
+
+fn sum_of_top_calories(tokens: &Vec<&str>, top: usize) -> i32 {
+    let mut calories = Vec::new();
+    let mut tmp = 0;
+
+    for token in tokens {
+        // Empty line means we're moving to the next elf, so save current calories
+        // Non-empty line means we're adding calories
+        if token.is_empty() {
+            calories.push(tmp);
+            tmp = 0;
+        } else {
+            let c = token.parse::<i32>().unwrap();
+            tmp += c;
+        }
+    }
+
+    calories.sort_by(|a, b| b.cmp(a));
+
+    let mut sum = 0;
+    for i in 0..top {
+        sum += calories[i];
+    }
+
+    return sum;
 }
