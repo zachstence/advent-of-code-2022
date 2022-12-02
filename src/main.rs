@@ -1,6 +1,7 @@
 use clap::Parser;
 
 mod day1;
+mod day2;
 
 #[derive(Parser)]
 struct Args {
@@ -20,6 +21,12 @@ fn main() {
             answer = day1::part1("./src/day1/input.txt");
         } else if part == 2 {
             answer = day1::part2("./src/day1/input.txt");
+        }
+    } else if day == 2 {
+        if part == 1 {
+            answer = day2::part1("./src/day2/input.txt");
+        } else if part == 2 {
+            answer = day2::part2("./src/day2/test.txt");
         }
     }
 
