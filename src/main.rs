@@ -1,36 +1,7 @@
-use clap::Parser;
+extern crate advent_of_code_2022;
+extern crate aoc_runner_derive;
+extern crate aoc_runner;
 
-mod day1;
-mod day2;
+use aoc_runner_derive::aoc_main;
 
-#[derive(Parser)]
-struct Args {
-    day: i32,
-    part: i32,
-}
-
-fn main() {
-    let args = Args::parse();
-    let day = args.day;
-    let part = args.part;
-
-    let mut answer = String::from("");
-
-    if day == 1 {
-        if part == 1 {
-            answer = day1::part1("./src/day1/input.txt");
-        } else if part == 2 {
-            answer = day1::part2("./src/day1/input.txt");
-        }
-    } else if day == 2 {
-        if part == 1 {
-            answer = day2::part1("./src/day2/input.txt");
-        } else if part == 2 {
-            answer = day2::part2("./src/day2/input.txt");
-        }
-    }
-
-    println!("Day {day}, part {part}");
-    println!("---");
-    println!("Answer: {answer}");
-}
+aoc_main! { lib = advent_of_code_2022 }

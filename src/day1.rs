@@ -1,9 +1,9 @@
-use std::fs;
 use std::cmp;
 
-pub fn part1(input_file: &str) -> String {
+#[aoc(day1, part1)]
+pub fn part1(input: &str) -> i32 {
     // Append newline so last elf gets read properly
-    let input = fs::read_to_string(input_file).unwrap() + "\n";
+    let input = String::from(input) + "\n";
     
     let tokens = input.split('\n');
 
@@ -22,15 +22,17 @@ pub fn part1(input_file: &str) -> String {
         }
     }
 
-    max_calories.to_string()
+    max_calories
 }
 
-pub fn part2(input_file: &str) -> String {
+#[aoc(day1, part2)]
+pub fn part2(input: &str) -> i32 {
     // Append newline so last elf gets read properly
-    let input = fs::read_to_string(input_file).unwrap() + "\n";
+    let input = String::from(input) + "\n";
     
     let tokens: Vec<&str> = input.split('\n').collect();
-    sum_of_top_calories(&tokens, 3).to_string()
+
+    sum_of_top_calories(&tokens, 3)
 }
 
 fn sum_of_top_calories(tokens: &Vec<&str>, top: usize) -> i32 {

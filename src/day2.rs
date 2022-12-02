@@ -1,21 +1,13 @@
-use std::fs;
-
 #[allow(clippy::get_first)]
 
-pub fn part1(input_file: &str) -> String {
-    let input = fs::read_to_string(input_file).unwrap();
-
-    let answer: i32 = input.lines().map(|l| part1_get_score(l.split_once(' ').unwrap())).sum();
-
-    answer.to_string()
+#[aoc(day2, part1)]
+pub fn part1(input: &str) -> i32 {
+    input.lines().map(|l| part1_get_score(l.split_once(' ').unwrap())).sum()
 }
 
-pub fn part2(input_file: &str) -> String {
-    let input = fs::read_to_string(input_file).unwrap();
-
-    let answer: i32 = input.lines().map(|l| part2_get_score(l.split_once(' ').unwrap())).sum();
-
-    answer.to_string()
+#[aoc(day2, part2)]
+pub fn part2(input: &str) -> i32 {
+    input.lines().map(|l| part2_get_score(l.split_once(' ').unwrap())).sum()
 }
 
 const LOSS_SCORE: i32 = 0;
