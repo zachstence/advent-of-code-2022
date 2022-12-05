@@ -47,18 +47,63 @@ pub fn part1(input: &str) -> String {
     stacks.into_iter().map(|stack| stack.last().copied().unwrap()).collect::<Vec<&str>>().join("")
 }
 
+#[aoc(day5, part2)]
+pub fn part2(input: &str) -> String {
+    let (initial_state_str, moves_str) = input.split_once("\n\n").unwrap();
+    let initial_state = initial_state_str.lines();
+    let moves = moves_str.lines();
+    
+    // Set up stacks initial state
+    let mut stacks: Vec<Vec<&str>> = vec![];
+
+    for (l, line) in initial_state.rev().enumerate() {
+        // Initialize stacks from first line
+        if l == 0 {
+            let num_stacks = (line.len() + 1) / 4;
+            stacks = vec![vec![] as Vec<&str>; num_stacks];
+            continue;
+        }
+
+        let caps = STACK_REGEX.captures_iter(line)
+            .map(|cap| cap.get(1).unwrap().as_str())
+            .collect::<Vec<&str>>();
+        
+        for (c, cap) in caps.iter().enumerate() {
+            if cap == &" " { continue; }
+            stacks.get_mut(c).unwrap().push(cap);
+        }
+    }
+
+    for line in moves {
+        let Move {num_crates, from_index, to_index} = parse_move(line);
+
+        let from_stack = stacks.get_mut(from_index).unwrap();
+        let crates_start = from_stack.len() - num_crates;
+        let crates_to_move = from_stack.splice(crates_start.., []).collect::<Vec<&str>>();
+
+        for c in crates_to_move {
+            stacks.get_mut(to_index).unwrap().push(c);
+        }
+    }
+
+    // Get message containing top item on each stack
+    stacks.into_iter().map(|stack| stack.last().copied().unwrap()).collect::<Vec<&str>>().join("")
+}
+
 
 struct Move {
-    num_crates: u32,
+    num_crates: usize,
     from_index: usize,
     to_index: usize,
 }
+
+
 
 fn parse_move(line: &str) -> Move {
     let tokens = line.split_whitespace().collect::<Vec<&str>>();
 
     Move {
-        num_crates: tokens.get(1).unwrap().parse::<u32>().unwrap(),
+        num_crates: tokens.get(1).unwrap().parse::<usize>().unwrap(),
         from_index: tokens.get(3).unwrap().parse::<usize>().unwrap() - 1,
         to_index: tokens.get(5).unwrap().parse::<usize>().unwrap() - 1,
     }
