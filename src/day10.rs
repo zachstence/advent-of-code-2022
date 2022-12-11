@@ -130,7 +130,7 @@ impl fmt::Display for Screen {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = self.pixels
             .chunks(40)
-            .map(|line| line.iter().map(|pixel| if *pixel { '#' } else { '.' }).join("") + "\n").join("");
+            .map(|line| line.iter().map(|pixel| if *pixel { '█' } else { ' ' }).join("") + "\n").join("");
         write!(f, "\n{}", s)
     }
 }
