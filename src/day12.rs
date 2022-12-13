@@ -1,0 +1,210 @@
+use std::fmt::Display;
+
+use itertools::Itertools;
+
+#[aoc(day12, part1)]
+pub fn part1(input: &str) -> usize {
+    let mut grid = Grid::parse(input);
+
+    // println!("{grid}");
+
+    let path = grid.search();
+    // println!("\n=======\n{path:?}");
+
+    path.len() - 1
+}
+
+type Point = (usize, usize);
+
+type Path = Vec<Point>;
+
+struct Grid {
+    grid: Vec<Vec<char>>,
+    start: Point,
+    end: Point,
+}
+
+impl Grid {
+    pub fn parse(input: &str) -> Self {
+        let mut _start: Option<Point> = None;
+        let mut _end: Option<Point> = None;
+
+        let grid = input
+            .lines()
+            .enumerate()
+            .map(|(r, line)| {
+                line.chars().enumerate().map(|(c, mut ch)| {
+                    if ch == 'S' {
+                        _start = Some((c, r));
+                        ch = 'a';
+                    } else if ch == 'E' {
+                        _end = Some((c, r));
+                        ch = 'z';
+                    }
+                    ch
+                }).collect::<Vec<char>>()
+            })
+            .collect::<Vec<Vec<char>>>();
+        
+        let start = _start.expect("Should find start position denoted by 'S'");
+        let end = _end.expect("Should find end position denoted by 'E'");
+
+        Self { grid, start, end }
+    }
+
+    fn get_num_rows(&self) -> usize {
+        self.grid.len()
+    }
+
+    fn get_num_cols(&self) -> usize {
+        if let Some(first_row) = self.grid.first() {
+            first_row.len()
+        } else {
+            0
+        }
+    }
+
+    fn get_dimensions(&self) -> (usize, usize) {
+        (self.get_num_cols(), self.get_num_rows())
+    }
+
+    fn get_elevation_at(&self, p: Point) -> Option<&char> {
+        match self.grid.get(p.1) {
+            Some(row) => {
+                match row.get(p.0) {
+                    Some(e) => Some(e),
+                    None => None,
+                }
+            },
+            None => None,
+        }
+    }
+
+    fn elevation_diff(&self, p1: Point, p2: Point) -> i32 {
+        let _e1 = self.get_elevation_at(p1);
+        let _e2 = self.get_elevation_at(p2);
+
+        if _e1.is_none() || _e2.is_none() {
+            return i32::MAX;
+        }
+        let e1 = _e1.unwrap();
+        let e2 = _e2.unwrap();
+        
+        (*e1 as i32) - (*e2 as i32)
+    }
+
+    pub fn search(&mut self) -> Vec<Point> {
+        self._search(self.start, &mut vec![]).expect("A path from Start to End should exist")
+    }
+
+    fn _search(&mut self, p: Point, path: &mut Path) -> Option<Path> {
+        // println!();
+        // println!("_search {p:?} {path:?}");
+        path.push(p);
+
+        if p == self.end {
+            // println!("Got to the end! {path:?}");
+            return Some(path.to_vec());
+        }
+
+        // Determine what neighbors we should visit
+        let dims = self.get_dimensions();
+        let mut neighbors = vec![];
+
+        // If we can go right
+        if p.0 < dims.0 - 1 {
+            let right = (p.0 + 1, p.1);
+            // Make sure that point isn't in our path already
+            if !path.contains(&right) {
+                neighbors.push(right);
+            }
+        }
+
+        // If we can go down
+        if p.1 < dims.1 - 1 {
+            let down = (p.0, p.1 + 1);
+            // Make sure that point isn't in our path already
+            if !path.contains(&down) {
+                neighbors.push(down);
+            }
+        }
+
+        // If we can go left
+        if p.0 >= 1 {
+            let left = (p.0 - 1, p.1);
+            // Make sure that point isn't in our path already
+            if !path.contains(&left) {
+                neighbors.push(left);
+            }
+        }
+        
+        // If we can go up
+        if p.1 >= 1 {
+            let up = (p.0, p.1 - 1);
+            // Make sure that point isn't in our path already
+            if !path.contains(&up) {
+                neighbors.push(up);
+            }
+        }
+
+        let paths = neighbors
+            .iter()
+            .filter_map(|n| {
+                // If n can be reached from p, then we search there
+                let diff = self.elevation_diff(*n, p);
+                if diff <= 1 {
+                    let found_path = self._search(*n, path);
+                    if let Some(_path) = &found_path {
+                        // println!("_search {n:?} {path:?} returned {:?}", &found_path);
+                    }
+                    found_path
+                } else {
+                    None
+                }
+            }).collect::<Vec<Path>>();
+        
+        // println!("Found {} paths starting at {p:?}\n{}\n", paths.len(), paths.iter().map(|path| format!("  {path:?}")).join("\n"));
+        
+        let shortest_path = paths.iter().fold(None, |shortest, path| {
+                if shortest.is_none() {
+                    return Some(path);
+                }
+
+                let shortest_len = shortest.unwrap().len();
+                if path.len() < shortest_len {
+                    return Some(path);
+                }
+
+                shortest
+            });
+        
+        // println!("{p:?} Shortest Path: {shortest_path:?}");
+
+        shortest_path.cloned()
+    }
+}
+
+impl Display for Grid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Start={:?}\tEnd={:?}\n{}",
+            self.start,
+            self.end,
+            self.grid.iter().map(|row| row.iter().collect::<String>()).join("\n"),
+        )
+    }
+}
+
+#[cfg(test)]
+mod day12_tests {
+    use super::*;
+
+    #[test]
+    fn part1_sample_input() {
+        let input = "Sabqponm\nabcryxxl\naccszExk\nacctuvwj\nabdefghi";
+
+        let answer = part1(input);
+        assert_eq!(answer, 31);
+    }
+}
