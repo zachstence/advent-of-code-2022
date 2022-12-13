@@ -15,7 +15,7 @@ More docs at https://github.com/gobanos/cargo-aoc
 
 ## Lessons Learned
 - Day 11
-    - `f32` is not as big as you think it is
+    - Even though an IEEE 754 32-bit floating point number has a max value of 3.40282347E+38, it can't properly represent all numbers above 2^24 (https://stackoverflow.com/a/23031245/9080819)
     - `as f32` will silently overflow, instead use `into`/`try_into`
 
 ## Other
