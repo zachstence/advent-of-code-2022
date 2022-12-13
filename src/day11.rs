@@ -4,6 +4,15 @@ use itertools::Itertools;
 
 #[aoc(day11, part1)]
 pub fn part1(input: &str) -> u64 {
+    run(input, 20, true)
+}
+
+#[aoc(day11, part2)]
+pub fn part2(input: &str) -> u64 {
+    run(input, 10_000, false)
+}
+
+fn run(input: &str, num_rounds: u32, div_by_3: bool) -> u64 {
     // Read monkeys
     let mut monkeys = input
         .lines()
@@ -12,15 +21,16 @@ pub fn part1(input: &str) -> u64 {
         .map(|(_, items_line, operation_line, test_line, test_true_line, test_false_line)| {
             let items = parse_items(items_line);
             let operation = parse_operation(operation_line);
-            let test = parse_test(test_line, test_true_line, test_false_line);
+            let (test_num, test) = parse_test(test_line, test_true_line, test_false_line);
             
-            Monkey { items, operation, test, inspect_count: 0 }
+            Monkey { items, operation, test, test_num, inspect_count: 0 }
         })
         .collect::<Vec<Monkey>>();
     let num_monkeys = monkeys.len();
 
+    let lcm: u32 = monkeys.iter().map(|m| m.test_num).product();
+
     // Simulate monkeys
-    let num_rounds = 20;
     for _ in 0..num_rounds {
 
         for m in 0..num_monkeys {
@@ -28,15 +38,19 @@ pub fn part1(input: &str) -> u64 {
             let monkey = monkey.unwrap();
 
             while !monkey.items.is_empty() {
-                let item = monkey.items.pop_front().unwrap();
+                let mut item = monkey.items.pop_front().unwrap();
                     
-                let inspected = (monkey.operation)(item);
                 monkey.inspect_count += 1;
-                let worry_level = inspected / 3;
-                let throw_to = (monkey.test)(worry_level);
+                item = (monkey.operation)(item);
+                if div_by_3 {
+                    item /= 3;
+                } else {
+                    item %= lcm as u64;
+                }
+                let throw_to = (monkey.test)(item);
                 
                 let monkey_to_throw_to = rest.get_mut(throw_to).unwrap().as_mut().unwrap();
-                monkey_to_throw_to.items.push_back(worry_level);
+                monkey_to_throw_to.items.push_back(item);
             }
         }
     }
@@ -68,12 +82,12 @@ fn get_rest_mut(v: & mut [Monkey], i: usize) -> (Option<& mut Monkey>, Vec<Optio
 type OperationFn = Box<dyn Fn(u64) -> u64>;
 type TestFn = Box<dyn Fn(u64) -> usize>;
 
-fn parse_test(test_line: &str, test_true_line: &str, test_false_line: &str) -> TestFn {
-    let num = test_line.get(21..).unwrap().parse::<u64>().unwrap();
+fn parse_test(test_line: &str, test_true_line: &str, test_false_line: &str) -> (u32, TestFn) {
+    let num = test_line.get(21..).unwrap().parse::<u32>().unwrap();
     let true_monkey = test_true_line.get(29..).unwrap().parse::<usize>().unwrap();
     let false_monkey = test_false_line.get(30..).unwrap().parse::<usize>().unwrap();
 
-    Box::new(move |item| if item % num == 0 { true_monkey } else { false_monkey })
+    (num, Box::new(move |item| if item % (num as u64) == 0 { true_monkey } else { false_monkey }))
 }
 
 fn parse_operation(line: &str) -> OperationFn {
@@ -102,6 +116,7 @@ struct Monkey {
     items: VecDeque<u64>,
     operation: OperationFn,
     test: TestFn,
+    test_num: u32,
     inspect_count: u64,
 }
 
