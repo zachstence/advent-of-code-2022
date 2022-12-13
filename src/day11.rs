@@ -32,7 +32,7 @@ pub fn part1(input: &str) -> u64 {
                     
                 let inspected = (monkey.operation)(item);
                 monkey.inspect_count += 1;
-                let worry_level = inspected.checked_div(3).unwrap();
+                let worry_level = inspected / 3;
                 let throw_to = (monkey.test)(worry_level);
                 
                 let monkey_to_throw_to = rest.get_mut(throw_to).unwrap().as_mut().unwrap();
