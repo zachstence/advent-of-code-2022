@@ -9,34 +9,23 @@ pub fn part1(input: &str) -> u64 {
         .lines()
         .filter(|line| !line.is_empty())
         .tuples()
-        .enumerate()
-        .map(|(i, (_, items_line, operation_line, test_line, test_true_line, test_false_line))| {
+        .map(|(_, items_line, operation_line, test_line, test_true_line, test_false_line)| {
             let items = parse_items(items_line);
             let operation = parse_operation(operation_line);
             let test = parse_test(test_line, test_true_line, test_false_line);
             
-            Monkey { index: i, items, operation, test, inspect_count: 0 }
+            Monkey { items, operation, test, inspect_count: 0 }
         })
         .collect::<Vec<Monkey>>();
     let num_monkeys = monkeys.len();
 
-    for monkey in monkeys.iter() {
-        println!("Monkey {}\t Inspected: {}\t Items: {:?}", monkey.index, monkey.inspect_count, monkey.items);
-    }
-
-    let total_items_start = monkeys.iter().map(|m| m.items.len()).sum::<usize>();
-
     // Simulate monkeys
     let num_rounds = 20;
-    for i in 0..num_rounds {
-        println!("Round {}\n{monkeys:?}", i + 1);
+    for _ in 0..num_rounds {
 
         for m in 0..num_monkeys {
             let (monkey, mut rest) = get_rest_mut(&mut monkeys, m);
             let monkey = monkey.unwrap();
-
-            println!();
-            println!("Start Monkey {m} - {monkey:?}");
 
             while !monkey.items.is_empty() {
                 let item = monkey.items.pop_front().unwrap();
@@ -46,31 +35,13 @@ pub fn part1(input: &str) -> u64 {
                 let worry_level = inspected.checked_div(3).unwrap();
                 let throw_to = (monkey.test)(worry_level);
                 
-                println!("item {item}  \tinspected {inspected}\tworry {worry_level}  \tthrow to {throw_to}");
                 let monkey_to_throw_to = rest.get_mut(throw_to).unwrap().as_mut().unwrap();
                 monkey_to_throw_to.items.push_back(worry_level);
-
-                println!("{m} {} --{worry_level}--> {throw_to} {}", monkey.index, monkey_to_throw_to.index);
             }
-
-            println!("End Monkey {m} - {monkey:?}");
         }
     }
 
-    println!();
-    for monkey in monkeys.iter() {
-        println!("Monkey {}\t Inspected: {}\t Items: {:?}", monkey.index, monkey.inspect_count, monkey.items);
-    }
-
     monkeys.sort_by(|m1, m2| m2.inspect_count.cmp(&m1.inspect_count));
-    
-    println!();
-    for monkey in monkeys.iter() {
-        println!("Monkey {}\t Inspected: {}\t Items: {:?}", monkey.index, monkey.inspect_count, monkey.items);
-    }
-
-    let total_items_end = monkeys.iter().map(|m| m.items.len()).sum::<usize>();
-    println!("Total items: start={} end={}", total_items_start, total_items_end);
 
     let max1 = monkeys.get(0).unwrap();
     let max2 = monkeys.get(1).unwrap();
@@ -128,7 +99,6 @@ fn parse_items(line: &str) -> VecDeque<u64> {
 }
 
 struct Monkey {
-    index: usize,
     items: VecDeque<u64>,
     operation: OperationFn,
     test: TestFn,
