@@ -6,10 +6,11 @@ use itertools::Itertools;
 pub fn part1(input: &str) -> usize {
     let mut grid = Grid::parse(input);
 
-    // println!("{grid}");
+    println!("{grid}");
 
     let path = grid.search();
-    // println!("\n=======\n{path:?}");
+    println!("\n=======\n{path:?}");
+    println!("{}", grid.show_path_on_grid(&path));
 
     path.len() - 1
 }
@@ -98,12 +99,12 @@ impl Grid {
     }
 
     fn _search(&mut self, p: Point, path: &mut Path) -> Option<Path> {
-        // println!();
-        // println!("_search {p:?} {path:?}");
+        println!();
+        println!("_search {p:?}");
         path.push(p);
 
         if p == self.end {
-            // println!("Got to the end! {path:?}");
+            println!("Got to the end! {path:?}");
             return Some(path.to_vec());
         }
 
@@ -147,24 +148,20 @@ impl Grid {
             }
         }
 
+        println!("Visiting neighbors {neighbors:?}");
+
         let paths = neighbors
             .iter()
             .filter_map(|n| {
                 // If n can be reached from p, then we search there
                 let diff = self.elevation_diff(*n, p);
                 if diff <= 1 {
-                    let found_path = self._search(*n, path);
-                    if let Some(_path) = &found_path {
-                        // println!("_search {n:?} {path:?} returned {:?}", &found_path);
-                    }
-                    found_path
+                    self._search(*n, path)
                 } else {
                     None
                 }
             }).collect::<Vec<Path>>();
-        
-        // println!("Found {} paths starting at {p:?}\n{}\n", paths.len(), paths.iter().map(|path| format!("  {path:?}")).join("\n"));
-        
+                
         let shortest_path = paths.iter().fold(None, |shortest, path| {
                 if shortest.is_none() {
                     return Some(path);
@@ -178,9 +175,37 @@ impl Grid {
                 shortest
             });
         
-        // println!("{p:?} Shortest Path: {shortest_path:?}");
-
         shortest_path.cloned()
+    }
+
+    fn show_path_on_grid(&self, path: &Path) -> String {
+        let mut grid = self.grid.clone()
+            .iter_mut()
+            .map(|row| row.iter_mut().map(|_| '.').collect::<Vec<char>>())
+            .collect::<Vec<Vec<char>>>();
+
+        path
+            .iter()
+            .tuple_windows()
+            .for_each(|(curr, next)| {
+                let delta = (next.0 as i32 - curr.0 as i32, next.1 as i32 - curr.1 as i32);
+                let ch = match delta {
+                    (1, 0) => '→',
+                    (-1, 0) => '←',
+                    (0, 1) => '↓',
+                    (0, -1) => '↑',
+                    _ => {
+                        println!("Unexpected delta {delta:?} between {curr:?} and {next:?}");
+                        '?'
+                    },
+                };
+                grid[curr.1][curr.0] = ch;
+            });
+        
+        grid[self.start.1][self.start.0] = 'S';
+        grid[self.end.1][self.end.0] = 'E';
+        
+        grid_to_string(&grid)
     }
 }
 
@@ -191,9 +216,13 @@ impl Display for Grid {
             "Start={:?}\tEnd={:?}\n{}",
             self.start,
             self.end,
-            self.grid.iter().map(|row| row.iter().collect::<String>()).join("\n"),
+            grid_to_string(&self.grid),
         )
     }
+}
+
+fn grid_to_string(grid: &[Vec<char>]) -> String {
+    grid.iter().map(|row| row.iter().collect::<String>()).join("\n")
 }
 
 #[cfg(test)]
@@ -207,4 +236,12 @@ mod day12_tests {
         let answer = part1(input);
         assert_eq!(answer, 31);
     }
+
+    // #[test]
+    // fn can_go_down() {
+    //     let input = "SabcaaabcdefghijkkkkkkkkiiijjkklmnopqrstuvwxyzzzzzE";
+
+    //     let answer = part1(input);
+    //     assert_eq!(answer, 50);
+    // }
 }
