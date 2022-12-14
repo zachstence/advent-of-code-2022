@@ -6,12 +6,9 @@ use itertools::Itertools;
 pub fn part1(input: &str) -> u32 {
     let mut grid = Grid::parse(input);
 
-    println!("{grid}");
-
     let path = grid.search();
 
-    println!("\n=======\n{path:?}");
-    println!("{}", grid.show_path_on_grid(&path));
+    // println!("{}", grid.show_path_on_grid(&path));
 
     path.len() as u32
 }
@@ -97,7 +94,7 @@ impl Grid {
         neighbors
     }
 
-    fn get_elevation_at(&self, p: Point) -> Option<&char> {
+    fn get_elevation_at(&self, p: &Point) -> Option<&char> {
         match self.grid.get(p.1) {
             Some(row) => {
                 match row.get(p.0) {
@@ -109,7 +106,7 @@ impl Grid {
         }
     }
 
-    fn elevation_diff(&self, p1: Point, p2: Point) -> i32 {
+    fn elevation_diff(&self, p1: &Point, p2: &Point) -> i32 {
         let _e1 = self.get_elevation_at(p1);
         let _e2 = self.get_elevation_at(p2);
 
@@ -142,19 +139,11 @@ impl Grid {
         
             to_visit.drain(..);
 
-            println!();
-
             while !visiting.is_empty() {
-                println!("Batch {}", batches.len() - 1);
-                println!("Visiting: {visiting:?}");
-
                 let curr = visiting.pop_front().unwrap();
                 visited.insert(curr);
 
-                println!("Curr:  {curr:?}");
-
                 if curr == self.end {
-                    println!("Got to the end!");
                     to_visit.drain(..);
                     break;
                 }
@@ -164,20 +153,13 @@ impl Grid {
                     .filter(|n| {
                         let is_visited = visited.contains(n);
                         let is_going_to_visit = to_visit.contains(n) || visiting.contains(n);
-                        let is_too_steep = self.elevation_diff(*n, curr) > 1;
-                        !is_visited &&!is_going_to_visit && !is_too_steep
+                        let accessible = self.can_you_go_from_p1_to_p2(&curr, n);
+                        !is_visited && !is_going_to_visit && accessible
                     })
                     .collect::<Vec<Point>>();
 
                 neighbors_to_visit.iter().for_each(|n| to_visit.push_back(*n));
-                
-                println!("To visit: {to_visit:?}");
-            }
-        }
-
-        println!("== Batches ==");
-        for (i, batch) in batches.iter().enumerate() {
-            println!("{i}\t{batch:?}");
+                            }
         }
 
         self.build_path_from_batches(&batches)
@@ -191,7 +173,7 @@ impl Grid {
 
             let next = prev_batch
                 .iter()
-                .find(|p| are_neighbors(&curr, p))
+                .find(|p| self.can_you_go_from_p1_to_p2(p, &curr))
                 .unwrap_or_else(|| panic!("{curr:?} should have a neighbor in {prev_batch:?}"));
             
             path.push(*next);
@@ -201,6 +183,19 @@ impl Grid {
         path.reverse();
         path
     }
+
+    fn can_you_go_from_p1_to_p2(&self, p1: &Point, p2: &Point) -> bool {
+        let are_horizontal_neighbors = (-1..=1).contains(&(p1.0 as i32 - p2.0 as i32)) && p1.1 == p2.1;
+        let are_vertical_neighbors = (-1..=1).contains(&(p1.1 as i32 - p2.1 as i32)) && p1.0 == p2.0;
+        let are_neighbors = are_horizontal_neighbors || are_vertical_neighbors;
+
+        if !are_neighbors {
+            return false;
+        }
+        
+        let diff = self.elevation_diff(p2, p1);
+        diff <= 1
+    }    
 
     fn show_path_on_grid(&self, path: &Path) -> String {
         let mut grid = self.grid.clone()
@@ -218,10 +213,7 @@ impl Grid {
                     (-1, 0) => '←',
                     (0, 1) => '↓',
                     (0, -1) => '↑',
-                    _ => {
-                        // println!("Unexpected delta {delta:?} between {curr:?} and {next:?}");
-                        '?'
-                    },
+                    _ => panic!("Unexpected delta {delta:?} between {curr:?} and {next:?}"),
                 };
                 grid[curr.1][curr.0] = ch;
             });
@@ -231,12 +223,6 @@ impl Grid {
         
         grid_to_string(&grid)
     }
-}
-
-fn are_neighbors(p1: &Point, p2: &Point) -> bool {
-    let are_horizontal_neighbors = (-1..=1).contains(&(p1.0 as i32 - p2.0 as i32)) && p1.1 == p2.1;
-    let are_vertical_neighbors = (-1..=1).contains(&(p1.1 as i32 - p2.1 as i32)) && p1.0 == p2.0;
-    are_horizontal_neighbors || are_vertical_neighbors
 }
 
 impl Display for Grid {
@@ -267,20 +253,50 @@ mod day12_tests {
         assert_eq!(answer, 31);
     }
 
-    // #[test]
-    // fn custom() {
-    //     /*
-    //     abcccdeeefff
-    //     abcaaaeeeegg
-    //     abccaefyyzeg
-    //     SabcaazEwyxf
-    //     abcdopqreewg
-    //     abdnnmmstuvh
-    //     abdnnmmmlkji
-    //     */
-    //     let input = "abcccdeeefff\nabcaaaeeeegg\nabccaefyyzeg\nSabcaazEwyxf\nabcdopqreewg\nabdnnmmstuvh\nabdnnmmmlkji\n";
+    #[test]
+    fn custom() {
+        /*
+        abcccdeeefff
+        abcaaaeeeegg
+        abccaefyyzeg
+        SabcaazEwyxf
+        abcdopqreewg
+        abdnnmmstuvh
+        abdnnmmmlkji
+        */
+        let input = "abcccdeeefff\nabcaaaeeeegg\nabccaefyyzeg\nSabcaazEwyxf\nabcdopqreewg\nabdnnmmstuvh\nabdnnmmmlkji\n";
 
-    //     let answer = part1(input);
-    //     assert_eq!(answer, 43);
-    // }
+        let answer = part1(input);
+        assert_eq!(answer, 43);
+    }
+
+    #[test]
+    fn test_elevation_diff_up() {
+        let input = "SE";
+
+        let grid = Grid::parse(input);
+        let diff = grid.elevation_diff(&(0, 0), &(1, 0));
+
+        assert_eq!(diff, -25);
+    }
+
+    #[test]
+    fn test_elevation_diff_down() {
+        let input = "ES";
+
+        let grid = Grid::parse(input);
+        let diff = grid.elevation_diff(&(0, 0), &(1, 0));
+
+        assert_eq!(diff, 25);
+    }
+
+    #[test]
+    fn test_elevation_diff_same() {
+        let input = "SaE";
+
+        let grid = Grid::parse(input);
+        let diff = grid.elevation_diff(&(0, 0), &(1, 0));
+
+        assert_eq!(diff, 0);
+    }
 }
