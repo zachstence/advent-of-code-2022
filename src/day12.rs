@@ -8,13 +8,12 @@ pub fn part1(input: &str) -> u32 {
 
     println!("{grid}");
 
-    grid.search()
+    let path = grid.search();
 
-    // let path = grid.search();
-    // println!("\n=======\n{path:?}");
-    // println!("{}", grid.show_path_on_grid(&path));
+    println!("\n=======\n{path:?}");
+    println!("{}", grid.show_path_on_grid(&path));
 
-    // path.len() - 1
+    path.len() as u32
 }
 
 type Point = (usize, usize);
@@ -123,21 +122,30 @@ impl Grid {
         (*e1 as i32) - (*e2 as i32)
     }
 
-    pub fn search(&mut self) -> u32 {
+    pub fn search(&mut self) -> Path {
+        let mut batches: Vec<Vec<Point>> = vec![];
+
         let mut visited: HashSet<Point> = HashSet::new();
         let mut to_visit: VecDeque<Point> = VecDeque::from([self.start]);
-        let mut count: u32 = 0;
+
+        // To debug further, we probably need to check out the path we're getting
+        
+        // In order to get the path, each batch we should keep track of what points are visited
+        // And then at the end, maybe we can find the completed path between those batches?
 
         while !to_visit.is_empty() {
-            count += 1;
-
             // Visit points in batches
             let mut visiting = to_visit.clone();
+            
+            let batch: Vec<Point> = Vec::from(to_visit.clone());
+            batches.push(batch);
+        
             to_visit.drain(..);
 
             println!();
 
             while !visiting.is_empty() {
+                println!("Batch {}", batches.len() - 1);
                 println!("Visiting: {visiting:?}");
 
                 let curr = visiting.pop_front().unwrap();
@@ -146,6 +154,8 @@ impl Grid {
                 println!("Curr:  {curr:?}");
 
                 if curr == self.end {
+                    println!("Got to the end!");
+                    to_visit.drain(..);
                     break;
                 }
 
@@ -165,7 +175,31 @@ impl Grid {
             }
         }
 
-        count - 1
+        println!("== Batches ==");
+        for (i, batch) in batches.iter().enumerate() {
+            println!("{i}\t{batch:?}");
+        }
+
+        self.build_path_from_batches(&batches)
+    }
+
+    fn build_path_from_batches(&self, batches: &[Vec<Point>]) -> Path {
+        let mut path: Path = vec![];
+
+        let mut curr: Point = self.end;
+        for (prev_batch, _) in batches.iter().rev().tuple_windows() {
+
+            let next = prev_batch
+                .iter()
+                .find(|p| are_neighbors(&curr, p))
+                .unwrap_or_else(|| panic!("{curr:?} should have a neighbor in {prev_batch:?}"));
+            
+            path.push(*next);
+            curr = *next;
+        }
+
+        path.reverse();
+        path
     }
 
     fn show_path_on_grid(&self, path: &Path) -> String {
@@ -199,6 +233,12 @@ impl Grid {
     }
 }
 
+fn are_neighbors(p1: &Point, p2: &Point) -> bool {
+    let are_horizontal_neighbors = (-1..=1).contains(&(p1.0 as i32 - p2.0 as i32)) && p1.1 == p2.1;
+    let are_vertical_neighbors = (-1..=1).contains(&(p1.1 as i32 - p2.1 as i32)) && p1.0 == p2.0;
+    are_horizontal_neighbors || are_vertical_neighbors
+}
+
 impl Display for Grid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -227,20 +267,20 @@ mod day12_tests {
         assert_eq!(answer, 31);
     }
 
-    #[test]
-    fn custom() {
-        /*
-        abcccdeeefff
-        abcaaaeeeegg
-        abccaefyyzeg
-        SabcaazEwyxf
-        abcdopqreewg
-        abdnnmmstuvh
-        abdnnmmmlkji
-        */
-        let input = "abcccdeeefff\nabcaaaeeeegg\nabccaefyyzeg\nSabcaazEwyxf\nabcdopqreewg\nabdnnmmstuvh\nabdnnmmmlkji\n";
+    // #[test]
+    // fn custom() {
+    //     /*
+    //     abcccdeeefff
+    //     abcaaaeeeegg
+    //     abccaefyyzeg
+    //     SabcaazEwyxf
+    //     abcdopqreewg
+    //     abdnnmmstuvh
+    //     abdnnmmmlkji
+    //     */
+    //     let input = "abcccdeeefff\nabcaaaeeeegg\nabccaefyyzeg\nSabcaazEwyxf\nabcdopqreewg\nabdnnmmstuvh\nabdnnmmmlkji\n";
 
-        let answer = part1(input);
-        assert_eq!(answer, 43);
-    }
+    //     let answer = part1(input);
+    //     assert_eq!(answer, 43);
+    // }
 }
