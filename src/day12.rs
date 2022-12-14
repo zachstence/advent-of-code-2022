@@ -1,18 +1,20 @@
-use std::fmt::Display;
+use std::{fmt::Display, collections::{HashSet, VecDeque}};
 
 use itertools::Itertools;
 
 #[aoc(day12, part1)]
-pub fn part1(input: &str) -> usize {
+pub fn part1(input: &str) -> u32 {
     let mut grid = Grid::parse(input);
 
     println!("{grid}");
 
-    let path = grid.search();
-    println!("\n=======\n{path:?}");
-    println!("{}", grid.show_path_on_grid(&path));
+    grid.search()
 
-    path.len() - 1
+    // let path = grid.search();
+    // println!("\n=======\n{path:?}");
+    // println!("{}", grid.show_path_on_grid(&path));
+
+    // path.len() - 1
 }
 
 type Point = (usize, usize);
@@ -69,6 +71,33 @@ impl Grid {
         (self.get_num_cols(), self.get_num_rows())
     }
 
+    fn get_neighbors(&self, p: &Point) -> Vec<(usize, usize)> {
+        let dims = self.get_dimensions();
+        let mut neighbors = vec![];
+
+        // If we can go right
+        if p.0 < dims.0 - 1 {
+            neighbors.push((p.0 + 1, p.1));
+        }
+
+        // If we can go down
+        if p.1 < dims.1 - 1 {
+            neighbors.push((p.0, p.1 + 1));
+        }
+
+        // If we can go left
+        if p.0 >= 1 {
+            neighbors.push((p.0 - 1, p.1));
+        }
+        
+        // If we can go up
+        if p.1 >= 1 {
+            neighbors.push((p.0, p.1 - 1));
+        }
+
+        neighbors
+    }
+
     fn get_elevation_at(&self, p: Point) -> Option<&char> {
         match self.grid.get(p.1) {
             Some(row) => {
@@ -94,89 +123,49 @@ impl Grid {
         (*e1 as i32) - (*e2 as i32)
     }
 
-    pub fn search(&mut self) -> Vec<Point> {
-        self._search(self.start, vec![]).expect("A path from Start to End should exist")
-    }
+    pub fn search(&mut self) -> u32 {
+        let mut visited: HashSet<Point> = HashSet::new();
+        let mut to_visit: VecDeque<Point> = VecDeque::from([self.start]);
+        let mut count: u32 = 0;
 
-    fn _search(&mut self, p: Point, mut path: Path) -> Option<Path> {
-        println!();
-        println!("_search {p:?} -> {:?}, current path with length {} : {path:?}", self.end, path.len());
-        path.push(p);
+        while !to_visit.is_empty() {
+            count += 1;
 
-        if p.0 == self.end.0 && p.1 == self.end.1 {
-            println!("Got to the end! {path:?}");
-            return Some(path.to_vec());
-        }
+            // Visit points in batches
+            let mut visiting = to_visit.clone();
+            to_visit.drain(..);
 
-        // Determine what neighbors we should visit
-        let dims = self.get_dimensions();
-        let mut neighbors = vec![];
+            println!();
 
-        // If we can go right
-        if p.0 < dims.0 - 1 {
-            let right = (p.0 + 1, p.1);
-            let diff = self.elevation_diff(right, p);
-            // Make sure that point isn't in our path already and that it is reachable
-            if !path.contains(&right) && diff <= 1 {
-                neighbors.push(right);
-            }
-        }
+            while !visiting.is_empty() {
+                println!("Visiting: {visiting:?}");
 
-        // If we can go down
-        if p.1 < dims.1 - 1 {
-            let down = (p.0, p.1 + 1);
-            let diff = self.elevation_diff(down, p);
-            // Make sure that point isn't in our path already and that it is reachable
-            if !path.contains(&down) && diff <= 1 {
-                neighbors.push(down);
-            }
-        }
+                let curr = visiting.pop_front().unwrap();
+                visited.insert(curr);
 
-        // If we can go left
-        if p.0 >= 1 {
-            let left = (p.0 - 1, p.1);
-            let diff = self.elevation_diff(left, p);
-            // Make sure that point isn't in our path already and that it is reachable
-            if !path.contains(&left) && diff <= 1 {
-                neighbors.push(left);
-            }
-        }
-        
-        // If we can go up
-        if p.1 >= 1 {
-            let up = (p.0, p.1 - 1);
-            let diff = self.elevation_diff(up, p);
-            // Make sure that point isn't in our path already and that it is reachable
-            if !path.contains(&up) && diff <= 1 {
-                neighbors.push(up);
-            }
-        }
+                println!("Curr:  {curr:?}");
 
-        println!("Visiting {} neighbors {neighbors:?}", neighbors.len());
+                if curr == self.end {
+                    break;
+                }
 
-        if neighbors.len() == 0 {
-            println!("Reached dead end at {p:?} with path {path:?}");
-        }
+                let neighbors_to_visit = self.get_neighbors(&curr)
+                    .into_iter()
+                    .filter(|n| {
+                        let is_visited = visited.contains(n);
+                        let is_going_to_visit = to_visit.contains(n) || visiting.contains(n);
+                        let is_too_steep = self.elevation_diff(*n, curr) > 1;
+                        !is_visited &&!is_going_to_visit && !is_too_steep
+                    })
+                    .collect::<Vec<Point>>();
 
-        let paths = neighbors
-            .iter()
-            .filter_map(|n| self._search(*n, path.clone()))
-            .collect::<Vec<Path>>();
+                neighbors_to_visit.iter().for_each(|n| to_visit.push_back(*n));
                 
-        let shortest_path = paths.iter().fold(None, |shortest, path| {
-                if shortest.is_none() {
-                    return Some(path);
-                }
+                println!("To visit: {to_visit:?}");
+            }
+        }
 
-                let shortest_len = shortest.unwrap().len();
-                if path.len() < shortest_len {
-                    return Some(path);
-                }
-
-                shortest
-            });
-        
-        shortest_path.cloned()
+        count - 1
     }
 
     fn show_path_on_grid(&self, path: &Path) -> String {
@@ -230,13 +219,13 @@ fn grid_to_string(grid: &[Vec<char>]) -> String {
 mod day12_tests {
     use super::*;
 
-    // #[test]
-    // fn part1_sample_input() {
-    //     let input = "Sabqponm\nabcryxxl\naccszExk\nacctuvwj\nabdefghi\n";
+    #[test]
+    fn part1_sample_input() {
+        let input = "Sabqponm\nabcryxxl\naccszExk\nacctuvwj\nabdefghi\n";
 
-    //     let answer = part1(input);
-    //     assert_eq!(answer, 31);
-    // }
+        let answer = part1(input);
+        assert_eq!(answer, 31);
+    }
 
     #[test]
     fn custom() {
@@ -252,6 +241,6 @@ mod day12_tests {
         let input = "abcccdeeefff\nabcaaaeeeegg\nabccaefyyzeg\nSabcaazEwyxf\nabcdopqreewg\nabdnnmmstuvh\nabdnnmmmlkji\n";
 
         let answer = part1(input);
-        assert_eq!(answer, 40);
+        assert_eq!(answer, 43);
     }
 }
