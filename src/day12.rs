@@ -3,14 +3,23 @@ use std::{fmt::Display, collections::{HashSet, VecDeque}};
 use itertools::Itertools;
 
 #[aoc(day12, part1)]
-pub fn part1(input: &str) -> u32 {
-    let mut grid = Grid::parse(input);
+pub fn part1(input: &str) -> usize {
+    let grid = Grid::parse(input);
 
-    let path = grid.search();
-
+    let path = grid.search(None);
     // println!("{}", grid.show_path_on_grid(&path));
 
-    path.len() as u32
+    path.len()
+}
+
+#[aoc(day12, part2)]
+pub fn part2(input: &str) -> usize {
+    let grid = Grid::parse(input);
+
+    let (_start, path) = grid.find_best_start();
+    // println!("{}", grid.show_path_on_grid(&path));
+
+    path.len()
 }
 
 type Point = (usize, usize);
@@ -94,6 +103,14 @@ impl Grid {
         neighbors
     }
 
+    fn has_neighbor(&self, p: Point, ch: &char) -> bool {
+        self
+            .get_neighbors(&p)
+            .iter()
+            .map(|n| self.get_elevation_at(n))
+            .contains(&Some(ch))
+    }
+
     fn get_elevation_at(&self, p: &Point) -> Option<&char> {
         match self.grid.get(p.1) {
             Some(row) => {
@@ -119,11 +136,13 @@ impl Grid {
         (*e1 as i32) - (*e2 as i32)
     }
 
-    pub fn search(&mut self) -> Path {
+    pub fn search(&self, start: Option<Point>) -> Path {
+        let _start: Point = if let Some(_start) = start { _start } else { self.start };
+
         let mut batches: Vec<Vec<Point>> = vec![];
 
         let mut visited: HashSet<Point> = HashSet::new();
-        let mut to_visit: VecDeque<Point> = VecDeque::from([self.start]);
+        let mut to_visit: VecDeque<Point> = VecDeque::from([_start]);
 
         // To debug further, we probably need to check out the path we're getting
         
@@ -159,10 +178,39 @@ impl Grid {
                     .collect::<Vec<Point>>();
 
                 neighbors_to_visit.iter().for_each(|n| to_visit.push_back(*n));
-                            }
+            }
         }
 
         self.build_path_from_batches(&batches)
+    }
+
+    fn get_possible_starts(&self) -> Vec<Point> {
+        self.grid.iter()
+            .enumerate()
+            .flat_map(|(r, row)| {
+                row.iter().enumerate().filter_map(move |(c, ch)| {
+                    let p = (c, r);
+                    let is_a = ch == &'a';
+                    let has_neighbor_b = self.has_neighbor(p, &'b');
+                    if is_a && has_neighbor_b {
+                        Some(p)
+                    } else {
+                        None
+                    }
+
+                })
+            })
+            .collect()
+    }
+
+    pub fn find_best_start(&self) -> (Point, Path) {
+        self.get_possible_starts()
+            .iter()
+            .map(|start| {
+                (*start, self.search(Some(*start)))
+            })
+            .min_by(|(_, a), (_, b)| a.len().cmp(&b.len()))
+            .expect("Should find a best start")
     }
 
     fn build_path_from_batches(&self, batches: &[Vec<Point>]) -> Path {
@@ -197,6 +245,7 @@ impl Grid {
         diff <= 1
     }    
 
+    #[allow(dead_code)]
     fn show_path_on_grid(&self, path: &Path) -> String {
         let mut grid = self.grid.clone()
             .iter_mut()
@@ -298,5 +347,15 @@ mod day12_tests {
         let diff = grid.elevation_diff(&(0, 0), &(1, 0));
 
         assert_eq!(diff, 0);
+    }
+
+    #[test]
+    fn has_neighbor() {
+        let input = "SabcdE";
+
+        let grid = Grid::parse(input);
+
+        let b_has_neighbor_c = grid.has_neighbor((2, 0), &'c');
+        assert!(b_has_neighbor_c);
     }
 }
