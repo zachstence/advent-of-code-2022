@@ -83,7 +83,7 @@ impl Filesystem {
         }
     }
 
-    pub fn get_node_mut(&mut self, index: usize) -> Option<&mut Node> {
+    fn get_node_mut(&mut self, index: usize) -> Option<&mut Node> {
         self.nodes.get_mut(index)
     }
 
