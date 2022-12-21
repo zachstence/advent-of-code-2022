@@ -20,17 +20,18 @@ pub struct Directory {
     name: String,
     parent: Option<usize>,
     children: Vec<usize>,
+    total_size: u64,
 }
 
 impl Display for Directory {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "- {} (dir)", self.name)
+        write!(f, "- {} (dir, total_size={})", self.name, self.total_size)
     }
 }
 
 pub struct File {
     name: String,
-    size: u32,
+    size: u64,
     parent: usize,
 }
 
@@ -50,7 +51,8 @@ impl Filesystem {
         let root_dir = Directory {
             name: "/".to_string(),
             parent: None,
-            children: vec![]
+            children: vec![],
+            total_size: 0,
         };
         let root_node = Node::Directory(root_dir);
 
@@ -79,6 +81,10 @@ impl Filesystem {
             Node::Directory(dir) => dir,
             _ => panic!("curr_dir isn't a directory"),
         }
+    }
+
+    pub fn get_node_mut(&mut self, index: usize) -> Option<&mut Node> {
+        self.nodes.get_mut(index)
     }
 
     pub fn cd(&mut self, dir_name: &String) {
@@ -119,6 +125,7 @@ impl Filesystem {
             name,
             parent: Some(parent_index),
             children: vec![],
+            total_size: 0,
         };
         let node = Node::Directory(dir);
         self.nodes.push(node);
@@ -128,7 +135,7 @@ impl Filesystem {
         child_index
     }
 
-    pub fn add_file(&mut self, name: String, size: u32) -> usize {
+    pub fn add_file(&mut self, name: String, size: u64) -> usize {
         let parent_index = self.curr_index;
         let child_index = self.nodes.len();
 
@@ -140,7 +147,20 @@ impl Filesystem {
         let node = Node::File(file);
         self.nodes.push(node);
 
+        // Add index to children
         self.curr_dir_mut().children.push(child_index);
+
+        // Update dir sizes
+        let mut index = Some(self.curr_index);
+        while let Some(i) = index {
+            if let Some(Node::Directory(dir)) = self.get_node_mut(i) {
+                // TODO if this is over 100,000 we don't need to add
+                // TODO if this addition goes over 100,000 we can stop iterating
+                dir.total_size += size;
+                
+                index = dir.parent;
+            }
+        }
 
         child_index
     }

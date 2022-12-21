@@ -17,10 +17,10 @@ pub fn part1(input: &str) -> u32 {
         .into_iter()
         .enumerate()
         .for_each(|(i, l)| {
-            println!("\n=== Executing line {} ===", i + 1);
-            println!("Filesystem:\n{fs}");
-            println!("curr_dir: {}", fs.curr_dir());
-            println!("Line: {l:?}");
+            // println!("\n=== Executing line {} ===", i + 1);
+            // println!("Filesystem:\n{fs}");
+            // println!("curr_dir: {}", fs.curr_dir());
+            // println!("Line: {l:?}");
 
             match l {
                 ParsedLine::ChangeDirectory(cd) => fs.cd(&cd.dir_name),

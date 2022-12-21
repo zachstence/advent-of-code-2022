@@ -67,7 +67,7 @@ impl TryFrom<&str> for DirectoryLine {
 #[derive(Debug)]
 pub struct FileLine {
     pub name: String,
-    pub size: u32,
+    pub size: u64,
 }
 
 impl TryFrom<&str> for FileLine {
@@ -78,7 +78,7 @@ impl TryFrom<&str> for FileLine {
             .captures(value).ok_or("Parsing FileLine gave no captures")?
             .get(1).ok_or("Parsed FileLine missing size")?
             .as_str()
-            .parse::<u32>().or(Err("Unable to parse file size from parsed FileLine"))?;
+            .parse::<u64>().or(Err("Unable to parse file size from parsed FileLine"))?;
         let name = FILE_REGEX
             .captures(value).ok_or("Parsing FileLine gave no captures")?
             .get(2).ok_or("Parsed FileLine missing name")?
