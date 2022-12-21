@@ -4,12 +4,33 @@ use filesystem::Filesystem;
 mod lines;
 use lines::parse;
 
+use self::lines::ParsedLine;
+
 #[aoc(day7, part1)]
 pub fn part1(input: &str) -> u32 {
 
     let lines = parse(input);
 
-    println!("{lines:?}");
+    let mut fs = Filesystem::new();
+
+    lines
+        .into_iter()
+        .enumerate()
+        .for_each(|(i, l)| {
+            println!("\n=== Executing line {} ===", i + 1);
+            println!("Filesystem:\n{fs}");
+            println!("curr_dir: {}", fs.curr_dir());
+            println!("Line: {l:?}");
+
+            match l {
+                ParsedLine::ChangeDirectory(cd) => fs.cd(&cd.dir_name),
+                ParsedLine::Directory(dir) => { fs.add_directory(dir.name); },
+                ParsedLine::File(file) => { fs.add_file(file.name, file.size); },
+                ParsedLine::List(..) => {},
+            }
+        });
+    
+    println!("{fs}");
 
     0
 }

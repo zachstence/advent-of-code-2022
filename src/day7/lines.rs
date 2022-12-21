@@ -13,7 +13,7 @@ lazy_static! {
 
 #[derive(Debug)]
 pub struct ChangeDirectoryLine {
-    dir_name: String,
+    pub dir_name: String,
 }
 
 impl TryFrom<&str> for ChangeDirectoryLine {
@@ -46,7 +46,7 @@ impl TryFrom<&str> for ListLine {
 
 #[derive(Debug)]
 pub struct DirectoryLine {
-    name: String,
+    pub name: String,
 }
 
 impl TryFrom<&str> for DirectoryLine {
@@ -66,8 +66,8 @@ impl TryFrom<&str> for DirectoryLine {
 
 #[derive(Debug)]
 pub struct FileLine {
-    name: String,
-    size: u32,
+    pub name: String,
+    pub size: u32,
 }
 
 impl TryFrom<&str> for FileLine {

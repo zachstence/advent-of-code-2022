@@ -81,7 +81,27 @@ impl Filesystem {
         }
     }
 
-    pub fn cd(&mut self, index: usize) {
+    pub fn cd(&mut self, dir_name: &String) {
+        if dir_name == ".." {
+            let index = self.curr_dir().parent.unwrap_or(0);
+            return self.cd_index(index);
+        }
+
+        // TODO only need to search current node's children
+        // Each node needs to know its index in order for that to work ^
+        let index: usize = self.nodes
+            .iter()
+            .find_position(|node| match node {
+                Node::Directory(dir) => dir.name == *dir_name,
+                Node::File(_) => false,
+            })
+            .unwrap()
+            .0;
+        
+        self.cd_index(index)
+    }
+
+    fn cd_index(&mut self, index: usize) {
         let node = &self.nodes[index];
         match node {
             Node::Directory(_) =>  {
