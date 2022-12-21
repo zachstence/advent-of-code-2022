@@ -1,27 +1,6 @@
 use std::fmt::Display;
-
 use itertools::Itertools;
 
-#[aoc(day7, part1)]
-pub fn part1(input: &str) -> u32 {
-    let mut fs = Filesystem::new();
-
-    let a = fs.add_directory("a".into());
-    fs.add_file("b".into(), 14848514);
-    fs.add_file("c".into(), 8504156);
-    let d = fs.add_directory("d".into());
-
-    fs.cd(a);
-
-    fs.add_directory("e".into());
-    fs.add_file("f".into(), 29116);
-    fs.add_file("g".into(), 2557);
-    fs.add_file("h.lst".into(), 62596);
-
-    println!("{fs}");
-
-    0
-}
 
 enum Node {
     Directory(Directory),
@@ -37,7 +16,7 @@ impl Display for Node {
     }
 }
 
-struct Directory {
+pub struct Directory {
     name: String,
     parent: Option<usize>,
     children: Vec<usize>,
@@ -49,7 +28,7 @@ impl Display for Directory {
     }
 }
 
-struct File {
+pub struct File {
     name: String,
     size: u32,
     parent: usize,
@@ -61,7 +40,7 @@ impl Display for File {
     }
 }
 
-struct Filesystem {
+pub struct Filesystem {
     nodes: Vec<Node>,
     curr_index: usize,
 }
@@ -177,18 +156,5 @@ impl Display for Filesystem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = self.dir_to_string(self.root_dir(), 0);
         write!(f, "{s}")
-    }
-}
-
-
-#[cfg(test)]
-pub mod day7_tests {
-    use super::*;
-
-    #[test]
-    fn pass() {
-        let input = "$ cd /\n$ ls\ndir a\n14848514 b.txt\n8504156 c.dat\ndir d\n$ cd a\n$ ls\ndir e\n29116 f\n2557 g\n62596 h.lst\n$ cd e\n$ ls\n584 i\n$ cd ..\n$ cd ..\n$ cd d\n$ ls\n4060174 j\n8033020 d.log\n5626152 d.ext\n7214296 k";
-        let answer = part1(input);
-        assert_eq!(answer, 95437);
     }
 }
