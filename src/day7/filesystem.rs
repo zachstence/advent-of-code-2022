@@ -2,9 +2,18 @@ use std::fmt::Display;
 use itertools::Itertools;
 
 
-enum Node {
+pub enum Node {
     Directory(Directory),
     File(File),
+}
+
+impl Node {
+    pub fn size(&self) -> u64 {
+        match self {
+            Node::Directory(dir) => dir.total_size(),
+            Node::File(file) => file.size(),
+        }
+    }
 }
 
 impl Display for Node {
@@ -16,11 +25,23 @@ impl Display for Node {
     }
 }
 
+#[derive(Debug)]
 pub struct Directory {
     name: String,
     parent: Option<usize>,
     children: Vec<usize>,
     total_size: u64,
+    index: usize,
+}
+
+impl Directory {
+    pub fn total_size(&self) -> u64 {
+        self.total_size
+    }
+
+    pub fn children(&self) -> &Vec<usize> {
+        &self.children
+    }
 }
 
 impl Display for Directory {
@@ -33,6 +54,13 @@ pub struct File {
     name: String,
     size: u64,
     parent: usize,
+    index: usize,
+}
+
+impl File {
+    pub fn size(&self) -> u64 {
+        self.size
+    }
 }
 
 impl Display for File {
@@ -53,6 +81,7 @@ impl Filesystem {
             parent: None,
             children: vec![],
             total_size: 0,
+            index: 0,
         };
         let root_node = Node::Directory(root_dir);
 
@@ -83,27 +112,47 @@ impl Filesystem {
         }
     }
 
-    fn get_node_mut(&mut self, index: usize) -> Option<&mut Node> {
+    pub fn get_node(&self, index: usize) -> Option<&Node> {
+        self.nodes.get(index)
+    }
+
+    pub fn get_node_mut(&mut self, index: usize) -> Option<&mut Node> {
         self.nodes.get_mut(index)
     }
 
+    pub fn get_directories(&self) -> Vec<&Directory> {
+        self.nodes
+            .iter()
+            .filter_map(|node| match node {
+                Node::Directory(dir) => Some(dir),
+                Node::File(_) => None,
+            })
+            .collect()
+    }
+
     pub fn cd(&mut self, dir_name: &String) {
+        if dir_name == "/" {
+            return self.cd_index(0);
+        }
+
         if dir_name == ".." {
             let index = self.curr_dir().parent.unwrap_or(0);
             return self.cd_index(index);
         }
 
-        // TODO only need to search current node's children
-        // Each node needs to know its index in order for that to work ^
-        let index: usize = self.nodes
+        let index = self.curr_dir()
+            .children
             .iter()
-            .find_position(|node| match node {
-                Node::Directory(dir) => dir.name == *dir_name,
-                Node::File(_) => false,
+            .filter_map(|i| {
+                match self.get_node(*i).unwrap() {
+                    Node::Directory(dir) => Some(dir),
+                    Node::File(_) => None,
+                }
             })
+            .find(|dir| dir.name.eq(dir_name))
             .unwrap()
-            .0;
-        
+            .index;
+
         self.cd_index(index)
     }
 
@@ -126,6 +175,7 @@ impl Filesystem {
             parent: Some(parent_index),
             children: vec![],
             total_size: 0,
+            index: child_index,
         };
         let node = Node::Directory(dir);
         self.nodes.push(node);
@@ -143,6 +193,7 @@ impl Filesystem {
             name,
             size,
             parent: parent_index,
+            index: child_index,
         };
         let node = Node::File(file);
         self.nodes.push(node);
@@ -196,5 +247,38 @@ impl Display for Filesystem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = self.dir_to_string(self.root_dir(), 0);
         write!(f, "{s}")
+    }
+}
+
+
+#[cfg(test)]
+mod day7_filesystem_tests {
+    use super::*;
+
+    #[test]
+    fn directories_with_0_size_should_have_no_children() {
+        let mut fs = Filesystem::new();
+
+        fs.cd(&"/".to_string());
+        fs.add_directory("a1".to_string());
+        fs.add_directory("a2".to_string());
+        fs.cd(&"a2".to_string());
+        fs.add_file("file".to_string(), 1234);
+        fs.add_directory("a3".to_string());
+        fs.cd(&"a3".to_string());
+
+        let dirs = fs.get_directories();
+        assert_eq!(dirs.len(), 4);
+
+        dirs
+            .iter()
+            .for_each(|dir| {
+                if dir.total_size == 0 {
+                    assert_eq!(dir.children.len(), 0);
+                }
+                if dir.children.is_empty() {
+                    assert_eq!(dir.total_size, 0);
+                }
+            })
     }
 }
