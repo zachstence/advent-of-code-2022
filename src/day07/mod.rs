@@ -4,7 +4,7 @@ use filesystem::Filesystem;
 mod lines;
 use lines::parse;
 
-use self::{lines::ParsedLine, filesystem::Directory};
+use self::filesystem::Directory;
 
 #[aoc(day7, part1)]
 pub fn part1(input: &str) -> u64 {
