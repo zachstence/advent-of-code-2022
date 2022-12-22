@@ -1,6 +1,8 @@
 use std::fmt::Display;
 use itertools::Itertools;
 
+use super::lines::ParsedLine;
+
 
 pub enum Node {
     Directory(Directory),
@@ -89,6 +91,19 @@ impl Filesystem {
             nodes: vec![root_node],
             curr_index: 0,
         }
+    }
+
+    pub fn exec_lines(&mut self, lines: Vec<ParsedLine>) {
+        lines
+        .into_iter()
+        .for_each(|l| {
+            match l {
+                ParsedLine::ChangeDirectory(cd) => self.cd(&cd.dir_name),
+                ParsedLine::Directory(dir) => { self.add_directory(dir.name); },
+                ParsedLine::File(file) => { self.add_file(file.name, file.size); },
+                ParsedLine::List(..) => {},
+            }
+        });
     }
 
     pub fn root_dir(&self) -> &Directory {

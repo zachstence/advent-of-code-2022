@@ -4,26 +4,14 @@ use filesystem::Filesystem;
 mod lines;
 use lines::parse;
 
-use self::lines::ParsedLine;
+use self::{lines::ParsedLine, filesystem::Directory};
 
 #[aoc(day7, part1)]
 pub fn part1(input: &str) -> u64 {
-
     let lines = parse(input);
-
     let mut fs = Filesystem::new();
+    fs.exec_lines(lines);
 
-    lines
-        .into_iter()
-        .for_each(|l| {
-            match l {
-                ParsedLine::ChangeDirectory(cd) => fs.cd(&cd.dir_name),
-                ParsedLine::Directory(dir) => { fs.add_directory(dir.name); },
-                ParsedLine::File(file) => { fs.add_file(file.name, file.size); },
-                ParsedLine::List(..) => {},
-            }
-        });
-    
     for dir in fs.get_directories() {
         let sizes_sum = dir.children().iter().map(|i| fs.get_node(*i).unwrap()).map(|node| node.size()).sum::<u64>();
         assert_eq!(dir.total_size(), sizes_sum);
@@ -42,6 +30,30 @@ pub fn part1(input: &str) -> u64 {
         .sum::<u64>();
 
     sum
+}
+
+#[aoc(day7, part2)]
+pub fn part2(input: &str) -> u64 {
+    let disk_space = 70_000_000;
+    let space_needed = 30_000_000;
+
+    let lines = parse(input);
+    let mut fs = Filesystem::new();
+    fs.exec_lines(lines);
+
+    let total_used = fs.root_dir().total_size();
+    let unused = disk_space - total_used;
+    let to_free = space_needed - unused;
+
+    let dirs = fs.get_directories();
+    let mut candidates = dirs
+        .iter()
+        .filter(|dir| dir.total_size() >= to_free)
+        .collect::<Vec<&&Directory>>();
+        
+    candidates.sort_by_key(|a| a.total_size());
+
+    candidates.first().unwrap().total_size()
 }
 
 
