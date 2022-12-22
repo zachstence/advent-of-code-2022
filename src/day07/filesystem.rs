@@ -55,8 +55,6 @@ impl Display for Directory {
 pub struct File {
     name: String,
     size: u64,
-    parent: usize,
-    index: usize,
 }
 
 impl File {
@@ -201,14 +199,11 @@ impl Filesystem {
     }
 
     pub fn add_file(&mut self, name: String, size: u64) -> usize {
-        let parent_index = self.curr_index;
         let child_index = self.nodes.len();
 
         let file = File {
             name,
             size,
-            parent: parent_index,
-            index: child_index,
         };
         let node = Node::File(file);
         self.nodes.push(node);
