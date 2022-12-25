@@ -6,33 +6,29 @@ use serde_json::from_str;
 
 #[aoc(day13, part1)]
 pub fn part1(input: &str) -> usize {
-    let in_order = input
+    // Add newlines so .tuples() reads the last pair of packets
+    let input = String::from(input) + "\n\n";
+
+    let cmps = input
         .lines()
         .tuples()
         .map(|(left, right, _)| {
             let (left_parsed, right_parsed) = (left.parse::<Value>().unwrap(), right.parse::<Value>().unwrap());
-            
-            let cmp_res = left_parsed.cmp(&right_parsed);
-            let is_in_order = cmp_res == Ordering::Less || cmp_res == Ordering::Equal;
-            println!("{left_parsed}\n{right_parsed}\n{is_in_order}\n");
-
-            is_in_order
+            left_parsed.cmp(&right_parsed)
         })
-        .collect::<Vec<bool>>();
+        .collect::<Vec<_>>();
 
-    println!("{in_order:?}");
-
-    in_order
+    cmps
         .iter()
         .enumerate()
-        .map(|(i, is_in_order)| if *is_in_order { i + 1 } else { 0 })
+        .map(|(i, res)| if *res == Ordering::Less { i + 1 } else { 0 })
         .sum()
 }
 
-#[aoc(day13, part2)]
-pub fn part2(input: &str) -> u32 {
-    0
-}
+// #[aoc(day13, part2)]
+// pub fn part2(input: &str) -> u32 {
+//     0
+// }
 
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -61,7 +57,7 @@ impl FromStr for Value {
 
 impl Ord for Value {
     fn cmp(&self, other: &Self) -> Ordering {
-        if self == other { return Ordering::Equal; }
+        if self == other { return Ordering::Equal };
 
         match (self, other) {
             // Compare Integer Values by comparing the integers
@@ -98,14 +94,13 @@ impl PartialEq for Value {
             // List Values are equal if they have the same length and each element is equal
             (Value::List(s), Value::List(o)) => s.len() == o.len() && zip(s, o).fold(true, |acc, (si, oi)| acc && si.eq(oi)),
             // List and Integer Values are never equal
-            (Value::Integer(_), Value::List(_)) => false,
-            (Value::List(_), Value::Integer(_)) => false,
+            (Value::Integer(s), Value::List(_)) => Value::List(vec![Value::Integer(*s)]).eq(other),
+            (Value::List(_), Value::Integer(o)) => self.eq(&Value::List(vec![Value::Integer(*o)])),
         }
     }
 }
 
 impl Eq for Value { }
-
 
 #[cfg(test)]
 mod day13_tests {
@@ -251,11 +246,5 @@ mod day13_tests {
 
         let list_with_bigger_number_is_greater = list_124.cmp(&list_123) == Ordering::Greater;
         assert!(list_with_bigger_number_is_greater);
-    }
-
-    #[test]
-    fn nested_lists_test1() {
-        let packet1 = "[[[[10,1,3,6,3],[3,0],2],[],6],[9,9,[4,[10],4,5,[5,0,4]]],[9,9]]";
-        let packet2 = "[[10,10,8]]";
     }
 }
