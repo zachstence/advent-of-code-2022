@@ -7,7 +7,7 @@ const MAX_ITERS: usize = 1;
 
 #[aoc(day14, part1)]
 pub fn part1(input: &str) -> usize {
-    let mut rocks: HashSet<Object> = HashSet::new();
+    let mut rocks: HashSet<Point> = HashSet::new();
 
     let mut min_x = SAND_DROP.0;
     let mut min_y = SAND_DROP.1;
@@ -33,20 +33,29 @@ pub fn part1(input: &str) -> usize {
                         let start = start_x.min(end_x);
                         let end = start_x.max(end_x);
                         for x in start..=end {
-                            rocks.insert(Object::Rock((x, y)));
+                            rocks.insert((x, y));
                         }
                     } else if start_x == end_x {
                         let x = start_x;
                         let start = start_y.min(end_y);
                         let end = start_y.max(end_y);
                         for y in start..=end {
-                            rocks.insert(Object::Rock((x, y)));
+                            rocks.insert((x, y));
                         }
                     }
                 });
         });
     
-    display(&rocks, &(min_x, min_y), &(max_x, max_y));
+    // Rocks and Sand could be kept in the same HashSet, but having them separate allows us to display them
+    let mut sand: HashSet<Point> = HashSet::new();
+    display(&rocks, &sand, &(min_x, min_y), &(max_x, max_y));
+
+    for _ in 0..MAX_ITERS {
+        let mut x = SAND_DROP.0;
+        for y in SAND_DROP.1..=max_y {
+            
+        }
+    }
 
     0
 }
@@ -58,37 +67,15 @@ pub fn part1(input: &str) -> usize {
 
 type Point = (usize, usize);
 
-#[derive(Debug, Eq, Hash, PartialEq)]
-enum Object {
-    Rock(Point),
-    Sand(Point),
-}
-
-impl Object {
-    fn x(&self) -> usize {
-        match self {
-            Object::Rock(r) => r.0,
-            Object::Sand(s) => s.0,
-        }
-    }
-
-    fn y(&self) -> usize {
-        match self {
-            Object::Rock(r) => r.1,
-            Object::Sand(s) => s.1,
-        }
-    }
-}
-
-fn display(objects: &HashSet<Object>, min: &Point, max: &Point) {
+fn display(rocks: &HashSet<Point>, sand: &HashSet<Point>, min: &Point, max: &Point) {
     println!("  {:03}{}{:03}", min.0, " ".repeat(max.0 - min.0 - 1), max.0);
 
     for y in min.1..=max.1 {
         print!("{y:03} ");
         for x in min.0..=max.0 {
-            if objects.contains(&Object::Rock((x, y))) {
+            if rocks.contains(&(x, y)) {
                 print!("#");
-            } else if objects.contains(&Object::Sand((x, y))) {
+            } else if sand.contains(&(x, y)) {
                 print!("O");
             } else if (x, y) == SAND_DROP {
                 print!("+");
