@@ -2,7 +2,7 @@ use std::{str::FromStr, iter::zip, cmp::Ordering, fmt::Display};
 
 use itertools::Itertools;
 use serde::{Serialize, Deserialize};
-use serde_json::from_str;
+use serde_json;
 
 #[aoc(day13, part1)]
 pub fn part1(input: &str) -> usize {
@@ -25,13 +25,30 @@ pub fn part1(input: &str) -> usize {
         .sum()
 }
 
-// #[aoc(day13, part2)]
-// pub fn part2(input: &str) -> u32 {
-//     0
-// }
+#[aoc(day13, part2)]
+pub fn part2(input: &str) -> usize {
+    let mut packets = input
+        .lines()
+        .filter(|line| !line.is_empty())
+        .map(|line| line.parse::<Value>().unwrap())
+        .collect::<Vec<_>>();
+    
+    let divider1 = Value::List(vec![Value::List(vec![Value::Integer(2)])]);
+    let divider2 = Value::List(vec![Value::List(vec![Value::Integer(6)])]);
+
+    packets.push(divider1.clone());
+    packets.push(divider2.clone());
+
+    packets.sort();
+
+    let pos1 = packets.iter().position(|p| *p == divider1).unwrap();
+    let pos2 = packets.iter().position(|p| *p == divider2).unwrap();
+
+    (pos1 + 1) * (pos2 + 1)
+}
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 enum Value {
     List(Vec<Value>),
@@ -51,7 +68,7 @@ impl FromStr for Value {
     type Err = serde_json::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        from_str::<Value>(s)
+        serde_json::from_str::<Value>(s)
     }
 }
 
@@ -138,11 +155,11 @@ mod day13_tests {
         assert_eq!(answer, 13);
     }
 
-    // #[test]
-    // fn part2_sample_input() {
-    //     let answer = part2(SAMPLE_INPUT);
-    //     assert_eq!(answer, 0);
-    // }
+    #[test]
+    fn part2_sample_input() {
+        let answer = part2(SAMPLE_INPUT);
+        assert_eq!(answer, 140);
+    }
 
     ////////
     
