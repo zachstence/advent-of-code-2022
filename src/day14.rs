@@ -1,12 +1,18 @@
-use std::{collections::HashSet, fmt::Display};
+use std::{collections::HashSet};
 
 use itertools::Itertools;
 
 const SAND_DROP: Point = (500, 0);
+const MAX_ITERS: usize = 1;
 
 #[aoc(day14, part1)]
 pub fn part1(input: &str) -> usize {
     let mut rocks: HashSet<Object> = HashSet::new();
+
+    let mut min_x = SAND_DROP.0;
+    let mut min_y = SAND_DROP.1;
+    let mut max_x = SAND_DROP.0;
+    let mut max_y = SAND_DROP.1;
 
     input
         .lines()
@@ -17,13 +23,16 @@ pub fn part1(input: &str) -> usize {
                 .map(|(x, y)| (x.parse::<usize>().unwrap(), y.parse::<usize>().unwrap()))
                 .tuple_windows()
                 .for_each(|((start_x, start_y), (end_x, end_y))| {
-                    println!("({start_x},{start_y}), ({end_x},{end_y})");
+                    min_x = min_x.min(start_x).min(end_x);
+                    max_x = max_x.max(start_x).max(end_x);
+                    min_y = min_y.min(start_y).min(end_y);
+                    max_y = max_y.max(start_y).max(end_y);
+
                     if start_y == end_y {
                         let y = start_y;
                         let start = start_x.min(end_x);
                         let end = start_x.max(end_x);
                         for x in start..=end {
-                            println!("  ({x},{y})");
                             rocks.insert(Object::Rock((x, y)));
                         }
                     } else if start_x == end_x {
@@ -31,16 +40,13 @@ pub fn part1(input: &str) -> usize {
                         let start = start_y.min(end_y);
                         let end = start_y.max(end_y);
                         for y in start..=end {
-                            println!("  ({x},{y})");
                             rocks.insert(Object::Rock((x, y)));
                         }
                     }
                 });
         });
     
-    println!("{rocks:?}");
-    display(&rocks);
-
+    display(&rocks, &(min_x, min_y), &(max_x, max_y));
 
     0
 }
@@ -74,18 +80,12 @@ impl Object {
     }
 }
 
-fn display(objects: &HashSet<Object>) {
-    // Searching this way is expensive, but its just for printing to console, so 🤷🏼‍♂️
-    let min_x = objects.iter().min_by_key(|o| o.x()).unwrap().x().min(SAND_DROP.0);
-    let max_x = objects.iter().max_by_key(|o| o.x()).unwrap().x().max(SAND_DROP.0);
-    let min_y = objects.iter().min_by_key(|o| o.y()).unwrap().y().min(SAND_DROP.1);
-    let max_y = objects.iter().max_by_key(|o| o.y()).unwrap().y().max(SAND_DROP.1);
+fn display(objects: &HashSet<Object>, min: &Point, max: &Point) {
+    println!("  {:03}{}{:03}", min.0, " ".repeat(max.0 - min.0 - 1), max.0);
 
-    println!("  {:03}{}{:03}", min_x, " ".repeat(max_x - min_x - 1), max_x);
-
-    for y in min_y..=max_y {
+    for y in min.1..=max.1 {
         print!("{y:03} ");
-        for x in min_x..=max_x {
+        for x in min.0..=max.0 {
             if objects.contains(&Object::Rock((x, y))) {
                 print!("#");
             } else if objects.contains(&Object::Sand((x, y))) {
