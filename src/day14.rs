@@ -6,8 +6,11 @@ const SAND_DROP: Point = (500, 0);
 const DX: &[i32] = &[0, -1, 1];
 const MAX_SAND: usize = 10_000;
 
-#[aoc(day14, part1)]
-pub fn part1(input: &str) -> usize {
+type Input = (HashSet<Point>, Point, Point);
+
+/// Returns Rock locations, min point, and max point 
+#[aoc_generator(day14)]
+pub fn generator(input: &str) -> Input {
     let mut rocks: HashSet<Point> = HashSet::new();
 
     let mut min_x = SAND_DROP.0;
@@ -47,6 +50,13 @@ pub fn part1(input: &str) -> usize {
                 });
         });
     
+    (rocks, (min_x, min_y), (max_x, max_y))
+}
+
+#[aoc(day14, part1)]
+pub fn part1(input: &Input) -> usize {
+    let (rocks, _, (_, max_y)) = input;
+
     // Rocks and Sand could be kept in the same HashSet, but having them separate allows us to display them
     let mut sand: HashSet<Point> = HashSet::new();
 
@@ -54,8 +64,8 @@ pub fn part1(input: &str) -> usize {
     for _ in 0..MAX_SAND {
         let mut x = SAND_DROP.0;
         let mut y = SAND_DROP.1;
-        while y != max_y {
-            if let Some(dx) = DX.iter().find(|dx| !is_occupied(&rocks, &sand, &(x + *dx, y + 1))) {
+        while y != *max_y {
+            if let Some(dx) = DX.iter().find(|dx| !is_occupied(rocks, &sand, &(x + *dx, y + 1))) {
                 // Falls to (x,y)
                 x += *dx;
                 y += 1;
@@ -68,19 +78,20 @@ pub fn part1(input: &str) -> usize {
         }
 
         // Sand has fallen to the abyss, we're done simulating
-        if y == max_y { break; }
+        if y == *max_y { break; }
     }
 
     sand.len()
 }
 
-// #[aoc(day14, part2)]
-// pub fn part2(input: &str) -> u32 {
-//     0
-// }
+#[aoc(day14, part2)]
+pub fn part2(input: &Input) -> usize {
+    0
+}
 
 type Point = (i32, i32);
 
+#[allow(dead_code)]
 fn display(rocks: &HashSet<Point>, sand: &HashSet<Point>, min: &Point, max: &Point) {
     println!("  {:03}{}{:03}", min.0 - 1, " ".repeat((max.0 - min.0 + 1) as usize), max.0 + 1);
 
@@ -116,7 +127,8 @@ mod day14_tests {
 
     #[test]
     fn part1_sample_input() {
-        let answer = part1(SAMPLE_INPUT);
+        let input = generator(SAMPLE_INPUT);
+        let answer = part1(&input);
         assert_eq!(answer, 24);
     }
 
