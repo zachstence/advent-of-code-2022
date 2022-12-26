@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 const SAND_DROP: Point = (500, 0);
 const DX: &[i32] = &[0, -1, 1];
-const MAX_SAND: usize = 10_000;
+const MAX_SAND: usize = 100_000;
 
 type Input = (HashSet<Point>, Point, Point);
 
@@ -86,29 +86,63 @@ pub fn part1(input: &Input) -> usize {
 
 #[aoc(day14, part2)]
 pub fn part2(input: &Input) -> usize {
-    0
+    let (rocks, _, (_, max_y)) = input;
+
+    // Rocks and Sand could be kept in the same HashSet, but having them separate allows us to display them
+    let mut sand: HashSet<Point> = HashSet::new();
+
+    // Prevent infinite loop from a bug
+    for _ in 0..MAX_SAND {
+        let mut x = SAND_DROP.0;
+        let mut y = SAND_DROP.1;
+        while y != *max_y + 1 {
+            if let Some(dx) = DX.iter().find(|dx| !is_occupied(rocks, &sand, &(x + *dx, y + 1))) {
+                // Falls to (x,y)
+                x += *dx;
+                y += 1;
+                continue;
+            } else {
+                // Can't fall, is at rest
+                sand.insert((x, y));
+                break;
+            }
+        }
+
+        // Sand has fallen to the bottom, done falling
+        if y == *max_y + 1 {
+            sand.insert((x, y));
+            continue;
+        }
+
+        // Sand has piled up to the top, done simulating
+        if y == SAND_DROP.1 { break; }
+    }
+
+    sand.len()
 }
 
 type Point = (i32, i32);
 
 #[allow(dead_code)]
-fn display(rocks: &HashSet<Point>, sand: &HashSet<Point>, min: &Point, max: &Point) {
-    println!("  {:03}{}{:03}", min.0 - 1, " ".repeat((max.0 - min.0 + 1) as usize), max.0 + 1);
+fn display(rocks: &HashSet<Point>, sand: &HashSet<Point>, min: &Point, max: &Point, bottom: bool) {
+    // println!("  {:03}{}{:03}", min.0 - 5, " ".repeat((max.0 - min.0 + 9) as usize), max.0 + 5);
 
-    for y in min.1..=max.1 + 1 {
+    for y in min.1..=max.1 + 2 {
         print!("{y:03} ");
-        for x in min.0 - 1..=max.0 + 1 {
+        for x in min.0 - 5..=max.0 + 5 {
             if rocks.contains(&(x, y)) {
                 print!("#");
             } else if sand.contains(&(x, y)) {
                 print!("o");
             } else if (x, y) == SAND_DROP {
                 print!("+");
+            } else if bottom && y == max.1 + 2 {
+                print!("#");
             } else {
                 print!(".");
             }
         }
-        println!();
+        // println!();
     }
 }
 
@@ -132,9 +166,10 @@ mod day14_tests {
         assert_eq!(answer, 24);
     }
 
-    // #[test]
-    // fn part2_sample_input() {
-    //     let answer = part2(SAMPLE_INPUT);
-    //     assert_eq!(answer, 0);
-    // }
+    #[test]
+    fn part2_sample_input() {
+        let input = generator(SAMPLE_INPUT);
+        let answer = part2(&input);
+        assert_eq!(answer, 93);
+    }
 }
