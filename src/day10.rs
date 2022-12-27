@@ -121,7 +121,7 @@ impl Screen {
 
     fn draw_pixel(&mut self, i: usize) {
         if (0..240).contains(&i) {
-            self.pixels[i as usize] = true
+            self.pixels[i] = true
         }
     }
 }
