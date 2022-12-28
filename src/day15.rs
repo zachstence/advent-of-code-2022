@@ -1,9 +1,6 @@
+use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
-
-const BEACON: char = 'B';
-const SENSOR: char = 'S';
-const NOT_BEACON: char = '#';
 
 lazy_static! {
     static ref LINE_REGEX: Regex = Regex::new(r"^Sensor at x=(-?\d+), y=(-?\d+): closest beacon is at x=(-?\d+), y=(-?\d+)$").unwrap();
@@ -14,38 +11,87 @@ type Point = (i32, i32);
 #[derive(Debug)]
 pub struct ParsedLine {
     sensor: Point,
-    closest_beacon: Point,
+    beacon: Point,
+    distance: u32,
 }
 
-type Input = Vec<ParsedLine>;
+#[derive(Debug)]
+pub struct Input {
+    lines: Vec<ParsedLine>,
+    min_x: i32,
+    max_x: i32,
+}
 
 #[aoc_generator(day15)]
 pub fn generator(input: &str) -> Input {
-    input
+    let mut min_x = i32::MAX;
+    let mut max_x = i32::MIN;
+
+    let lines = input
         .lines()
         .map(|line| LINE_REGEX.captures_iter(line).collect::<Vec<_>>())
         .map(|captures| {
-            println!("{captures:?}");
             let sensor_x = captures[0][1].parse::<i32>().unwrap();
             let sensor_y = captures[0][2].parse::<i32>().unwrap();
+            let sensor = (sensor_x, sensor_y);
+
             let beacon_x = captures[0][3].parse::<i32>().unwrap();
             let beacon_y = captures[0][4].parse::<i32>().unwrap();
-            ParsedLine { sensor: (sensor_x, sensor_y), closest_beacon: (beacon_x, beacon_y) }
+            let beacon = (beacon_x, beacon_y);
+
+            let distance = manhattan_distance(&sensor, &beacon);
+
+            min_x = min_x.min(sensor_x).min(beacon_x);
+            max_x = max_x.max(sensor_x).max(beacon_x);
+
+            ParsedLine { sensor, beacon, distance }
         })
-        .collect()
+        .collect::<Vec<_>>();
+    
+    Input { lines, min_x, max_x }
 }
 
 #[aoc(day15, part1)]
-pub fn part1(input: &Input) -> u32 {
-    // Read in sensors and beacons, and mark where beacons can't be
-    println!("{input:?}");
+pub fn part1(input: &Input) -> usize {
+    // Sample input -> 10
+    // Actual input -> 2_000_000
+    // let line_of_interest = 10;
+    let line_of_interest = 2_000_000;
 
-    0
+    let mut count = 0_usize;
+
+    // For each point in the line we're looking at
+    // TODO my original bounding by min_x and max_x wasn't big enough, how can we bound it correctly?
+    for x in input.min_x - 100000000..=input.max_x + 100000000 {
+        let point: Point = (x, line_of_interest);
+
+        // Check if this point is covered by another sensor's range
+        for line in &input.lines {
+            let d = manhattan_distance(&point, &line.sensor);
+            
+            // If point is already occupied, don't consider it
+            if point == line.beacon || point == line.sensor {
+                continue;
+            }
+
+            // If close to another sensor, beacon can't be here
+            if d <= line.distance {
+                count += 1;
+                break;
+            }
+        }
+    }
+
+    count
 }
 
-#[aoc(day15, part2)]
-pub fn part2(input: &Input) -> u32 {
-    0
+// #[aoc(day15, part2)]
+// pub fn part2(input: &Input) -> u32 {
+//     0
+// }
+
+fn manhattan_distance(p1: &Point, p2: &Point) -> u32 {
+    p1.0.abs_diff(p2.0) + p1.1.abs_diff(p2.1)
 }
 
 #[cfg(test)]
@@ -76,10 +122,10 @@ mod day15_tests {
         assert_eq!(answer, 26);
     }
 
-    #[test]
-    fn part2_sample_input() {
-        let input = generator(SAMPLE_INPUT);
-        let answer = part2(&input);
-        assert_eq!(answer, 0);
-    }
+    // #[test]
+    // fn part2_sample_input() {
+    //     let input = generator(SAMPLE_INPUT);
+    //     let answer = part2(&input);
+    //     assert_eq!(answer, 0);
+    // }
 }
