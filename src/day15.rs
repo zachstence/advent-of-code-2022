@@ -1,4 +1,5 @@
-use itertools::Itertools;
+use std::collections::HashSet;
+
 use lazy_static::lazy_static;
 use regex::Regex;
 
@@ -85,13 +86,66 @@ pub fn part1(input: &Input) -> usize {
     count
 }
 
-// #[aoc(day15, part2)]
-// pub fn part2(input: &Input) -> u32 {
-//     0
-// }
+#[aoc(day15, part2)]
+pub fn part2(input: &Input) -> u64 {
+
+    // Sample input -> 20
+    // Actual input -> 4_000_000
+    // let search_area = 20;
+    let search_area = 4_000_000;
+
+    // The spot for the missing beacon is where the other beacons have no overlap
+    // Rather than searching every point, we can look 1 space past the perimeter of each beacon's area
+    // One of these spaces just past a perimeter is where the missing beacon goes
+
+    for line in &input.lines {
+        let perim = gen_perimeter(&line.sensor, line.distance + 1);
+
+        for p in perim {
+            // If outside of search area, don't check
+            if p.0 < 0 || p.1 < 0 || p.0 > search_area || p.1 > search_area {
+                continue;
+            }
+
+            // Check if point is contained within another beacon's area
+            let is_contained = input.lines.iter().any(|line| manhattan_distance(&p, &line.sensor) <= line.distance);
+            // If not contained by any other beacon, we've found the unique spot
+            if !is_contained {
+                let tuning_frequency = (p.0 as u64) * 4_000_000_u64 + (p.1 as u64);
+                return tuning_frequency;
+            }
+        }
+    }
+
+    panic!("No beacon location found!");
+}
 
 fn manhattan_distance(p1: &Point, p2: &Point) -> u32 {
     p1.0.abs_diff(p2.0) + p1.1.abs_diff(p2.1)
+}
+
+fn gen_perimeter(center: &Point, distance: u32) -> HashSet<Point> {
+    let mut set: HashSet<Point> = HashSet::new();
+    let perim_length = distance * 4;
+
+    // Start with rightmost point
+    let mut p: Point = (center.0 + distance as i32, center.1);
+
+    while (set.len() as u32) < perim_length {
+        let quadrant = (set.len() as u32) / distance + 1;
+
+        set.insert(p);
+
+        p = match quadrant {
+            1 => (p.0 - 1, p.1 + 1),
+            2 => (p.0 - 1, p.1 - 1),
+            3 => (p.0 + 1, p.1 - 1),
+            4 => (p.0 + 1, p.1 + 1),
+            _ => panic!("Invalid quadrant"),
+        };
+    }
+    
+    set
 }
 
 #[cfg(test)]
@@ -115,17 +169,67 @@ mod day15_tests {
         "Sensor at x=20, y=1: closest beacon is at x=15, y=3",
     );
 
+    // #[test]
+    // fn part1_sample_input() {
+    //     let input = generator(SAMPLE_INPUT);
+    //     let answer = part1(&input);
+    //     assert_eq!(answer, 26);
+    // }
+
     #[test]
-    fn part1_sample_input() {
+    fn part2_sample_input() {
         let input = generator(SAMPLE_INPUT);
-        let answer = part1(&input);
-        assert_eq!(answer, 26);
+        let answer = part2(&input);
+        assert_eq!(answer, 56000011);
     }
 
-    // #[test]
-    // fn part2_sample_input() {
-    //     let input = generator(SAMPLE_INPUT);
-    //     let answer = part2(&input);
-    //     assert_eq!(answer, 0);
-    // }
+    #[test]
+    fn test_gen_perimeter_5() {
+        let center = (0, 0);
+        let distance = 5_u32;
+
+        let expected: HashSet<Point> = HashSet::from([
+            (5, 0),
+            (4, 1),
+            (3, 2),
+            (2, 3),
+            (1, 4),
+            (0, 5),
+            (-1, 4),
+            (-2, 3),
+            (-3, 2),
+            (-4, 1),
+            (-5, 0),
+            (-4, -1),
+            (-3, -2),
+            (-2, -3),
+            (-1, -4),
+            (0, -5),
+            (1, -4),
+            (2, -3),
+            (3, -2),
+            (4, -1),
+        ]);
+
+        let actual = gen_perimeter(&center, distance);
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_gen_perimeter_1() {
+        let center = (10, 10);
+        let distance = 1;
+
+        let expected: HashSet<Point> = HashSet::from([
+            (11, 10),
+            (10, 11),
+            (9, 10),
+            (10, 9),
+        ]);
+
+        let actual = gen_perimeter(&center, distance);
+
+        assert_eq!(actual, expected);
+    }
 }
