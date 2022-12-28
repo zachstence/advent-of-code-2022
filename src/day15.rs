@@ -42,8 +42,8 @@ pub fn generator(input: &str) -> Input {
 
             let distance = manhattan_distance(&sensor, &beacon);
 
-            min_x = min_x.min(sensor_x).min(beacon_x);
-            max_x = max_x.max(sensor_x).max(beacon_x);
+            min_x = min_x.min(sensor_x - (distance as i32)).min(beacon_x - (distance as i32));
+            max_x = max_x.max(sensor_x + (distance as i32)).max(beacon_x + (distance as i32));
 
             ParsedLine { sensor, beacon, distance }
         })
@@ -63,7 +63,7 @@ pub fn part1(input: &Input) -> usize {
 
     // For each point in the line we're looking at
     // TODO my original bounding by min_x and max_x wasn't big enough, how can we bound it correctly?
-    for x in input.min_x - 100000000..=input.max_x + 100000000 {
+    for x in input.min_x..=input.max_x {
         let point: Point = (x, line_of_interest);
 
         // Check if this point is covered by another sensor's range
